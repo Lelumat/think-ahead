@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Think Ahead</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #12121a;
+  color: #cccccc;
+  font-family: system-ui, -apple-system, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Level select ── */
+#level-select {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+#level-select h1 {
+  font-size: 2rem;
+  color: #eeeeee;
+  letter-spacing: 0.04em;
+}
+#level-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 70px);
+  gap: 10px;
+}
+.lvl-btn {
+  width: 70px;
+  height: 70px;
+  background: #1e1e2e;
+  color: #aaaaaa;
+  border: 1px solid #333344;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.lvl-btn:hover {
+  background: #2a2a40;
+  color: #ffffff;
+  border-color: #555566;
+}
+
+/* ── Game ── */
+#game-container {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+}
+#hud {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 20px;
+  background: #1a1a24;
+  flex-shrink: 0;
+  border-bottom: 1px solid #2a2a3a;
+}
+#back-btn {
+  background: #25253a;
+  color: #999;
+  border: 1px solid #333;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+#back-btn:hover { color: #fff; }
+#level-label { color: #888; font-size: 0.9rem; }
+#canvas-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#canvas { display: block; }
+
+/* ── Win overlay ── */
+#win-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e1e2e;
+  border: 1px solid #44445a;
+  border-radius: 12px;
+  padding: 28px 36px;
+  text-align: center;
+  min-width: 260px;
+  flex-direction: column;
+  gap: 10px;
+  display: none;
+}
+#win-overlay.visible { display: flex; }
+#win-overlay p { font-size: 1.2rem; color: #eeeeee; margin-bottom: 6px; }
+.win-btn {
+  padding: 10px 20px;
+  background: #2a3a5a;
+  color: #aaddff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.win-btn:hover { background: #3a4a6a; }
+</style>
+</head>
+<body>
+
+<div id="level-select">
+  <h1>Think Ahead</h1>
+  <div id="level-grid"></div>
+</div>
+
+<div id="game-container">
+  <div id="hud">
+    <button id="back-btn">&#8592; Levels</button>
+    <span id="level-label"></span>
+  </div>
+  <div id="canvas-wrapper">
+    <canvas id="canvas"></canvas>
+    <div id="win-overlay">
+      <p>All nodes collected!</p>
+      <button class="win-btn" id="next-btn">Next Level &#8594;</button>
+      <button class="win-btn" id="menu-btn">Level Select</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Level data ──────────────────────────────────────────────────────────────
+
+const LEVELS = [
+`O - * - O - O   * - O - O - *
+|   |   -   |   |   |   |   |
+O - O - O - O - * - O - O - O
+|   |   |   -   |   |   |   |
+O - O - O - O   O   O   O   O
+|   |   |   -   -   -   |   |
+O - O - * - O - O   O   O   O
+|   |   |   |   |   |   |   |
+O   O - O - * - O   O   O   O
+|   |   -   |   -   |   |   |
+O - O   O - O - ò - * - O - O
+-   |   |   |   -   |   -   |
+O - O   O - * - O - O   O - O
+|   -   -   -   -   |   |   |
+O - O - O - O - O - O - O - O`,
+
+`O   O - O   O - O - O - O - O
+|   |   |   |   |   -   -   |
+O - O   O - O - O   O - O - O
+|   |   -   |   |   |   -   -
+O   O - O   O - O - *   ò - O
+|   -   |   |   |   |   |   |
+O   O - O - O - *   O - * - O
+-   -   |   |   |   |   |   |
+O - O - O   O - * - O - O - O
+|   -   |   |   |   |   -   |
+O - * - O - O   O - O - O - O
+|   -   |   |   -   -   |   |
+O   O - O   O - O - O   O   *
+|   |   |   |   -   |   |   |
+O - O - O - * - O - * - O - O`,
+
+`O   ò - * - O - O - * - O - O
+|   |   -   |   |   -   -   |
+O   O - O   O   O   O - *   O
+|   |   |   |   |   |   |   |
+O - O - O - O - O   O   O - *
+|   |   -   -   -   |   |   |
+O - O - O - * - O - * - O - O
+|   |   -   |   |   -   |   |
+O   O   O - O - O   O - O - O
+-   -   -   |   |   |   |   |
+O   O - O - * - O - O   O - O
+|   |   |   |   |   -   |   |
+O - O   O   O - O - O - O - O
+|   |   -   |   -   |   |   |
+O   O - O   * - O - O - O - O`,
+
+`O - O - * - O - O - * - O - O
+|   -   |   |   |   |   |   |
+O - * - O - O - O   * - O - O
+|   |   |   -   -   |   |   |
+* - O   O - O - O - O   *   O
+|   |   -   |   |   |   |   |
+O - *   O - O - O - O   O - O
+|   -   |   -   -   |   |   |
+O - O - O   O - O - O   O - O
+|   -   |   -   |   -   |   -
+O   O - O   O - O - O - O - O
+|   |   |   |   -   -   -   |
+O   O - O - O   O - O - * - O
+|   |   |   |   -   |   |   -
+O   O - O - O - O   O - O - ò`,
+
+`O   O - ò   * - O - *   O - O
+|   |   |   |   -   |   |   |
+O - O   O - * - O   O - O   O
+|   |   |   -   |   |   |   |
+O - O - O - O   O - * - O - O
+|   |   -   |   |   -   -   |
+O - O - O   * - * - O - O - O
+|   -   -   |   |   |   |   -
+O - O - O   O - O   O - O - O
+-   |   |   |   |   -   -   |
+O - * - O   O   * - O - O   O
+-   |   -   -   |   |   |   -
+O - O - O - O   O - O   O - O
+|   |   |   |   |   |   -   |
+O   O - O   O - O - O - O - O`,
+
+`O - O - * - O - O - O - O - *
+-   |   |   |   -   |   -   |
+O - O   O - O - O - O - O - *
+-   |   |   |   |   -   -   |
+O - O   O - O   O - O - O - O
+|   -   |   |   -   -   |   |
+*   * - O   O - O - * - O   *
+|   |   -   -   |   |   -   |
+O - O - O - O - O - O - ò   O
+|   |   |   -   -   |   -   |
+O - O - * - O   O - O - O   O
+-   |   -   |   |   -   |   |
+O - O   O - O - O   O - O   O
+|   -   |   -   -   |   |   |
+O   O - O - O   O - O - O - O`,
+
+`O - O - O - O - O - O - O - O
+|   |   |   -   |   -   |   |
+O - O - * - * - O - O - * - O
+|   |   |   |   -   |   |   |
+O - O - O - O   O   O   O - O
+|   |   -   -   |   |   |   -
+* - O - O - O - O   O - O - O
+|   |   -   |   |   |   -   |
+O - O - O - O   O   O - O - O
+|   |   -   -   -   |   -   |
+* - O - * - O - O   O   O   O
+|   -   -   |   |   |   |   |
+O - O - ò - O - O   O - O - O
+|   |   |   -   |   -   |   |
+O   * - O   O - O - O - * - O`,
+
+`O - O - O - O   O - O - O - O
+|   -   |   |   -   |   |   |
+O   O - O - O   O - O   O   O
+-   -   |   -   |   |   -   -
+O - O - O - O - O - O - * - O
+|   -   |   -   |   |   |   |
+O   O - O   O - O - O - *   *
+-   -   |   |   -   |   |   |
+O   O - O - O - *   O - O - O
+|   |   -   -   |   |   -   -
+O - O   O - O - O   O - O - O
+|   -   |   |   |   -   |   |
+*   ò   * - * - O   O - O   O
+|   |   |   -   -   |   |   |
+O - O   O - * - O - O - O - O`,
+
+`O - O - O - * - O - O   O   O
+|   |   |   |   -   |   |   |
+O - O   *   O - O - * - O   O
+|   |   |   |   |   -   |   |
+O - O - O - O - O   O - O   *
+|   -   |   |   |   |   |   |
+O - ò   O - O   O - O - O - O
+|   |   |   |   |   |   |   |
+O   * - O   O - O   O   * - O
+|   -   -   |   |   -   |   |
+O   O - O   O   O   O - O - O
+|   |   |   |   |   |   -   |
+O - O   O - O - * - O - O - O
+|   |   |   |   |   |   |   |
+O   O   O   O - O - O   * - O`,
+
+`O - O - O - * - O - O   O - O
+|   |   |   -   |   |   -   |
+O   O - O - O - O - O   O - O
+|   |   -   -   |   |   -   |
+O - O - O - O - O   O - O - O
+|   |   |   -   |   |   |   -
+*   O - O   O - O - O - O   O
+|   -   -   |   |   |   |   |
+O - O - O - O   O - O - * - O
+-   |   |   -   -   |   -   |
+* - O - O - O   O - O - O - O
+|   -   |   |   |   -   |   -
+O - O - * - O   ò   O - * - O
+|   |   |   |   -   |   |   |
+* - O - O - * - O - * - O - O`,
+
+`* - O - * - O - O   O - O - *
+|   |   |   |   -   -   |   |
+O   O - O - O - O - * - O   O
+|   |   |   -   -   -   |   |
+O - O - O   O - O - * - O   O
+|   |   -   |   |   |   |   |
+O - O - O - O - O - O   * - O
+-   -   -   |   -   |   -   -
+ò - O   O - *   O   O - O - O
+|   |   |   |   |   |   |   -
+O - O   O   O   O - O - O - O
+-   |   -   |   |   |   -   -
+O - O   O - O - O   * - O - O
+|   |   |   -   -   |   -   -
+O - O - O - O - O   O - O - O`,
+
+`O - O - O - O - O - O - O - O
+-   |   -   |   |   -   |   |
+O - O   O - O   * - O - O   *
+-   |   |   |   |   |   -   |
+* - O - O   O   O   O - O - O
+|   |   |   |   -   -   |   |
+O   O - O   O   O   O - O - O
+|   |   -   |   |   -   |   -
+* - O   O - O - O - O   O - *
+-   |   |   |   |   |   -   |
+O - *   O   O   O   ò   O - O
+|   -   -   -   -   -   |   |
+* - O   O   O   O - O - O   O
+|   |   |   |   -   |   |   |
+O - O - O - * - O - O - O   O`,
+
+`O   O - O - * - O   O - O - O
+|   -   |   -   |   |   |   |
+O   O   *   O - *   O - *   O
+|   |   |   -   |   -   |   |
+O   * - O - O   O - O - O - *
+|   |   -   |   -   |   -   -
+O - O   O - O - O - O   O - O
+|   -   |   |   |   -   |   |
+O - O - O - O   O - O - O - O
+|   -   |   |   |   -   |   |
+O   O - O   O   O   O - O   O
+|   -   |   |   |   |   |   |
+O - O - *   O - O   O - O - O
+|   |   |   |   |   |   |   |
+O   O - O   O   O   * - O - ò`,
+
+`O   O - O - O - O - O - O - O
+|   |   |   -   |   |   -   -
+ò - O - O   O   O - O - O - *
+|   |   |   |   -   |   |   |
+O - O   O - O   O - O - O   O
+-   -   |   |   -   |   -   |
+O - *   O - O - O   O   O - O
+|   |   |   |   |   -   |   |
+* - O - O   O - O - * - O   O
+|   |   |   -   |   -   -   -
+O   O - O - O   O - * - O   O
+|   -   -   -   -   |   |   |
+O   O   O   O - O - O   *   O
+|   |   |   |   -   |   |   |
+* - O - * - O   O - O   O - O`,
+
+`O - O - O - O - O - O - O - O
+-   -   |   |   -   -   |   -
+O   O - O - O   O - O   O - *
+|   |   -   |   |   |   -   |
+O - * - O - O - O - O   O   O
+|   -   |   |   -   -   |   |
+O - O   O - O   O - O   O - O
+|   |   -   |   -   |   |   -
+O - * - O   O   O   O - * - O
+-   -   |   |   |   |   -   |
+O   O - * - O - O - O - O - O
+|   -   -   -   |   -   |   |
+O - O - O - O - O - O - O - O
+|   |   |   |   |   |   -   |
+* - ò - O - * - O   * - O - O`,
+
+`O   O - O - * - O - * - O - O
+|   |   |   -   |   |   |   |
+O - * - O - * - O   O - O - O
+-   -   |   |   |   -   |   |
+O - O - *   O   * - ò - * - O
+-   |   -   |   |   |   |   |
+O - O   O   O - O - O - O   O
+-   -   |   -   -   |   |   -
+O - O - O   O - O - O - *   O
+|   -   |   |   |   -   |   |
+O - O   O   O   O   O - O - O
+|   |   -   |   -   -   -   -
+O   O - O   O   O - O - O - O
+|   -   |   |   |   -   -   |
+O   O - O - O - O - O   O - O`,
+
+`O - O - O   O - O - O - O   O
+|   -   -   |   |   -   |   |
+O - O   O   O   O - O - O - O
+|   -   |   |   |   -   |   |
+O - O - O - O   O   O - O - O
+|   |   -   |   |   |   -   |
+O   O - O   O   O   O   O - O
+|   -   -   |   -   |   -   -
+O   O - O   *   O   O   O - O
+|   |   |   |   |   -   |   |
+O   * - O - O - O   O - *   *
+-   |   |   |   -   |   |   |
+O   O - ò - * - O - *   O - O
+|   |   -   -   |   |   |   |
+O - O - O - O - O - * - O - *`,
+
+`O - O - O - O   O - O - O   O
+|   |   -   |   |   |   |   |
+O - O   O - O - * - O - O - *
+|   |   |   |   |   |   -   |
+O   O   O - O - O - * - O - O
+-   |   |   -   |   |   |   |
+O   O   O   O - *   O   O - *
+|   -   |   |   |   |   -   -
+O   O - O - O - * - O - O   O
+|   |   -   |   |   |   |   |
+O - O - O   O - O - O - O - *
+-   |   -   -   |   -   |   -
+O   O - O   O - * - O - ò - O
+|   -   -   |   |   |   -   |
+O - O - O - O - O - O - O - O`,
+
+`O   O - O - O   O - O   O - O
+|   |   -   -   |   -   |   |
+O - O - O - * - O - O - O   O
+-   -   |   -   |   |   |   |
+O - O - O - O   O - O   O   O
+|   |   |   |   |   |   -   |
+O   O - O - O - * - O - O   O
+|   |   |   |   -   -   -   |
+O   O   * - O - O - O   O   O
+-   |   |   |   |   |   |   -
+* - O - O - *   O   O - O   O
+|   -   |   |   -   |   |   |
+O - * - ò   O   O - O   O - O
+|   |   |   |   -   -   |   |
+* - O - * - O - O   O - O - O`,
+
+`O - O - O - O - O - O - O - O
+|   |   -   |   |   |   -   -
+O   O   O   * - O - *   O - O
+|   |   |   |   |   |   -   |
+O   O   * - ò - O - O   O   O
+|   -   |   |   |   -   |   |
+O - O   O - O - * - O   O - O
+|   |   -   |   |   |   |   -
+O   O - O - * - O - O - O - O
+|   |   |   -   |   -   |   -
+O   O - O - * - O - O   O - O
+|   -   -   |   |   -   |   -
+O   O   O - O - * - O - * - O
+-   |   |   -   |   |   -   -
+O - O - O - O - O   O - O - O`,
+
+`O   O - O - O - O - O - O - O
+|   |   -   -   |   |   |   -
+O - O - O - O   O   O - O - O
+|   |   -   -   -   |   -   -
+O - O - O - O - O - O   O - O
+-   |   |   -   |   -   -   |
+O - * - O - O - * - O - O - O
+|   |   |   |   -   |   |   |
+O - O - O - O - O - * - ò - O
+-   |   -   |   |   |   |   |
+O - O - O - * - O   O   O   *
+|   -   -   |   -   |   |   |
+O - O - O   O - O   * - O   O
+|   |   |   |   |   |   |   |
+O - O   * - O   * - O - O - O`,
+
+`O - O   O - O - O - * - O - *
+|   |   |   |   |   |   |   |
+O   O - O - * - O - O - O   O
+|   |   -   |   |   -   -   |
+* - O   O   O - O - O - *   O
+|   |   |   |   |   |   |   |
+O   O - O   *   O - O - ò   O
+-   -   |   |   |   |   |   |
+O - O - O   O   * - O - O - O
+|   |   |   |   |   |   -   |
+O - O   O - O   O - O - O   O
+|   |   |   -   |   |   -   |
+O - O - O - * - O - O   O - O
+|   |   |   |   |   |   |   |
+O - O - O - O - O - O - O   O`,
+
+`O   O - O - O - O - O - * - O
+|   |   |   -   -   -   |   |
+O - O - O   O - O - O - O   O
+|   |   |   |   -   |   |   |
+O   O - O   O - O - *   *   O
+|   -   |   |   -   |   |   |
+O - O   O - O - O - O - O - O
+|   |   |   |   -   |   |   |
+* - O - O - *   O - *   ò - O
+|   |   |   |   |   |   |   |
+O - O - O   O - * - O - O - O
+-   |   |   |   |   |   |   |
+O   O   O - O - O - O - O - O
+|   |   |   -   -   -   |   |
+O - O - O - O   O - O - * - O`,
+
+`O   O - O   O   O - O - O - O
+|   -   |   |   |   -   |   |
+O   O - O - * - O - O - O   O
+|   -   |   -   -   |   |   |
+O - O - O   O - O   O - * - O
+-   |   -   |   |   |   |   -
+O - O - * - * - *   * - O - O
+-   |   |   |   -   |   |   |
+O - O - O - O - O - * - O - O
+|   |   |   -   |   |   |   |
+O - O - O   O - O   O   * - O
+-   |   |   |   |   |   |   -
+ò   O   O   O   O - O   O - O
+|   |   |   |   -   -   |   |
+O - O - O   O - O - O - O - O`,
+
+`O - O - O - O - O - O - O - O
+-   |   -   |   |   -   |   |
+O - O - O   O - O   O - O - *
+|   |   |   -   -   |   |   -
+O - O   O   O - O   * - ò - O
+|   -   |   |   |   |   |   |
+O - O - O   *   O - *   O   O
+|   |   |   |   -   |   |   |
+* - O   O - O   O   O - O - O
+|   |   |   |   |   |   |   |
+O - O - * - O - O - O - O   O
+|   |   |   |   -   |   |   |
+O - O - O - O - O - O - *   O
+|   -   |   |   |   |   |   -
+* - O - O   O - O - O - O - O`,
+
+`O - O - O - O - * - O - O - O
+|   |   -   |   |   -   -   |
+O   O - O - O   O - O - O - O
+|   -   |   -   -   |   -   -
+O   O - O   O - O - O   O - O
+-   |   |   -   |   |   |   |
+O - O   O - O - ò   O - * - *
+|   -   |   |   |   |   |   -
+O - O - O   * - O - * - O - O
+-   |   |   |   -   -   |   |
+* - O - O - O - O - O - O   O
+|   |   -   |   |   -   |   |
+O   O - O - O - O - O   O   O
+|   |   |   |   |   |   -   |
+O - O - * - O   O - * - O - O`,
+
+`* - O - O - O - O - O   O - *
+|   |   |   |   |   |   |   |
+O   O   O   O - O   O - O   ò
+|   |   |   -   -   -   |   |
+O - O - O   O - *   O - *   *
+|   -   |   |   |   |   |   |
+* - O - O - O - O   O   O - O
+-   -   |   |   |   |   -   -
+O - O - O - O - O   O - O - O
+|   |   -   |   |   |   -   |
+O   O - O - * - O - O - O   O
+|   |   |   |   |   |   |   -
+O - O - O - O - O   O - O - O
+-   |   -   |   -   |   |   |
+O - O - O - * - O - O   O - O`,
+
+`O   O - O - O - O - O - O - O
+|   |   |   |   |   |   |   |
+O - O   * - * - O - O - O   O
+|   |   |   |   |   |   |   |
+O - O   O - O - O - O - O - O
+-   |   -   -   |   -   -   -
+O - O   * - O - O - O - * - O
+|   -   |   |   |   |   |   |
+O - * - O   O - O - O - O   O
+|   -   -   -   |   -   -   |
+O   O - ò - * - O   O - O - O
+-   |   |   -   |   |   -   |
+O - *   * - O   O - O - O - O
+|   |   |   |   |   -   -   |
+O - O - O   O - O - O - O   O`,
+
+`* - O - O - O - * - O - O - O
+|   |   -   |   |   |   -   -
+O   O   O - O - O - O - O - O
+|   |   -   |   -   -   |   -
+O - O - O - O - O - * - O - O
+|   |   |   |   |   |   -   -
+O   O - O - O - ò - O - * - O
+|   |   |   -   |   |   |   |
+O   O - O - O - O - O   O - O
+|   |   -   |   -   |   |   |
+* - O   O - O - * - O   O - O
+-   -   |   |   |   |   |   -
+* - O - O   O - O   O - O - O
+|   |   -   -   -   |   |   |
+O - O - * - O - O - O   O - O`,
+
+`O - O - *   O   * - O - O - O
+|   -   |   |   |   -   -   |
+O   * - ò   O - O - O - O - O
+|   |   |   |   |   -   |   |
+O - O - O - * - O - O - O - *
+|   -   |   -   |   -   -   |
+O - O   O   O - O - O   O   O
+|   -   -   |   |   |   |   |
+O   O - O - O   O - O - O - O
+|   |   -   -   |   -   |   -
+O - O - O - * - O - O - O - *
+|   |   -   |   |   |   -   |
+O - O - O   O - O - O - O - O
+|   |   |   |   -   |   |   |
+O - O - O - * - O - O - O - O`,
+];
+
+// ─── Parser (port of level_loader.gd _parse) ─────────────────────────────────
+
+function parseLevel(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+  if (lines.length === 0) return null;
+
+  let maxLen = 0;
+  for (let i = 0; i < lines.length; i += 2) maxLen = Math.max(maxLen, lines[i].length);
+  const cols = Math.floor((maxLen + 3) / 4);
+  const rows = Math.floor((lines.length + 1) / 2);
+
+  const grid = [], hConn = [], vConn = [];
+
+  for (let r = 0; r < rows; r++) {
+    const nline = r * 2 < lines.length ? lines[r * 2] : '';
+    const grow = [], hrow = [];
+
+    for (let c = 0; c < cols; c++) {
+      const np = c * 4;
+      const ch = np < nline.length ? nline[np] : 'O';
+      grow.push({ start: ch === 'ò', colored: ch === '*' });
+      if (c < cols - 1) {
+        const hp = c * 4 + 2;
+        hrow.push(hp < nline.length ? nline[hp] === '-' : false);
+      }
+    }
+
+    grid.push(grow);
+    hConn.push(hrow);
+
+    if (r < rows - 1) {
+      const cline = r * 2 + 1 < lines.length ? lines[r * 2 + 1] : '';
+      const vrow = [];
+      for (let c = 0; c < cols; c++) {
+        const vp = c * 4;
+        vrow.push(vp < cline.length ? cline[vp] === '|' : false);
+      }
+      vConn.push(vrow);
+    }
+  }
+
+  return { cols, rows, grid, hConn, vConn };
+}
+
+// ─── State ───────────────────────────────────────────────────────────────────
+
+let currentIndex = 0;
+let level = null;
+let path = [];       // [{x, y}]
+let coloredTotal = 0;
+let completed = false;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function pathHas(x, y) {
+  for (const p of path) if (p.x === x && p.y === y) return true;
+  return false;
+}
+
+function hasConnection(ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  if (dx === 1  && dy === 0) return level.hConn[ay][ax];
+  if (dx === -1 && dy === 0) return level.hConn[ay][bx];
+  if (dx === 0  && dy === 1) return level.vConn[ay][ax];
+  if (dx === 0  && dy === -1) return level.vConn[by][ax];
+  return false;
+}
+
+function collectedCount() {
+  let n = 0;
+  for (const p of path) if (level.grid[p.y][p.x].colored) n++;
+  return n;
+}
+
+// ─── Game logic ──────────────────────────────────────────────────────────────
+
+function tryMove(dx, dy) {
+  if (path.length === 0 || completed) return;
+  const cur = path[path.length - 1];
+  const nx = cur.x + dx, ny = cur.y + dy;
+  if (nx < 0 || nx >= level.cols || ny < 0 || ny >= level.rows) return;
+  if (!hasConnection(cur.x, cur.y, nx, ny)) return;
+  if (path.length > 1) {
+    const prev = path[path.length - 2];
+    if (nx === prev.x && ny === prev.y) { doUndo(); return; }
+  }
+  if (pathHas(nx, ny)) return;
+  path.push({ x: nx, y: ny });
+  render();
+  checkWin();
+}
+
+function doUndo() {
+  if (path.length > 1) { path.pop(); render(); }
+}
+
+function doReset() {
+  while (path.length > 1) path.pop();
+  completed = false;
+  document.getElementById('win-overlay').classList.remove('visible');
+  render();
+}
+
+function checkWin() {
+  if (coloredTotal === 0 || completed) return;
+  if (collectedCount() === coloredTotal) {
+    completed = true;
+    document.getElementById('win-overlay').classList.add('visible');
+  }
+}
+
+// ─── Rendering ───────────────────────────────────────────────────────────────
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const NODE_R = 18;
+// Colored node: Color(0.95, 0.15, 0.15), lightened 0.25 for visited
+const GEM_FILL    = 'rgb(242,38,38)';
+const GEM_VISITED = 'rgb(245,92,92)';
+
+function cellSize() {
+  const csW = (canvas.width  - 80)  / Math.max(level.cols - 1, 1);
+  const csH = (canvas.height - 120) / Math.max(level.rows - 1, 1);
+  return Math.min(140, Math.min(csW, csH));
+}
+
+function margin(cs) {
+  return {
+    x: (canvas.width  - (level.cols - 1) * cs) / 2,
+    y: (canvas.height - (level.rows - 1) * cs) / 2 + 20,
+  };
+}
+
+function render() {
+  if (!level) return;
+
+  const wrapper = document.getElementById('canvas-wrapper');
+  canvas.width  = wrapper.clientWidth;
+  canvas.height = wrapper.clientHeight;
+
+  const cs = cellSize();
+  const mg = margin(cs);
+  const edgeW  = Math.max(6, cs * 0.09);
+  const trailW = Math.min(18, cs * 0.18);
+
+  // Background
+  ctx.fillStyle = '#12121a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Edges
+  ctx.strokeStyle = '#8c8ca6';
+  ctx.lineWidth = edgeW;
+  ctx.lineCap = 'round';
+  for (let r = 0; r < level.rows; r++) {
+    for (let c = 0; c < level.cols; c++) {
+      const px = mg.x + c * cs, py = mg.y + r * cs;
+      if (c + 1 < level.cols && level.hConn[r][c]) {
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(mg.x + (c + 1) * cs, py);
+        ctx.stroke();
+      }
+      if (r + 1 < level.rows && level.vConn[r][c]) {
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px, mg.y + (r + 1) * cs);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Trail
+  if (path.length > 1) {
+    ctx.strokeStyle = 'rgba(89,166,255,0.85)';
+    ctx.lineWidth = trailW;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(mg.x + path[0].x * cs, mg.y + path[0].y * cs);
+    for (let i = 1; i < path.length; i++) {
+      ctx.lineTo(mg.x + path[i].x * cs, mg.y + path[i].y * cs);
+    }
+    ctx.stroke();
+  }
+
+  // Nodes
+  const cur = path.length > 0 ? path[path.length - 1] : null;
+  for (let r = 0; r < level.rows; r++) {
+    for (let c = 0; c < level.cols; c++) {
+      const cell = level.grid[r][c];
+      const px = mg.x + c * cs, py = mg.y + r * cs;
+      const visited   = pathHas(c, r);
+      const isCurrent = cur && cur.x === c && cur.y === r;
+
+      let fill;
+      if      (cell.start)             fill = visited ? '#40bf40' : '#268c26';
+      else if (cell.colored && visited) fill = GEM_VISITED;
+      else if (cell.colored)            fill = GEM_FILL;
+      else if (visited)                 fill = '#4073b3';
+      else                              fill = '#333340';
+
+      ctx.beginPath();
+      ctx.arc(px, py, NODE_R, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(px, py, NODE_R, 0, Math.PI * 2);
+      ctx.strokeStyle = '#a6a6a6';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      if (isCurrent) {
+        ctx.beginPath();
+        ctx.arc(px, py, NODE_R + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Progress counter
+  ctx.fillStyle = '#cccccc';
+  ctx.font = '16px system-ui, sans-serif';
+  ctx.fillText(`${collectedCount()} / ${coloredTotal} collected`, 20, 50);
+
+  // Controls hint
+  ctx.fillStyle = '#737373';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.fillText('WASD / Arrows: move     Z / Backspace: undo     R: restart', 20, canvas.height - 10);
+}
+
+// ─── Screen management ───────────────────────────────────────────────────────
+
+function showLevelSelect() {
+  document.getElementById('level-select').style.display = 'flex';
+  document.getElementById('game-container').style.display = 'none';
+}
+
+function showGame() {
+  document.getElementById('level-select').style.display = 'none';
+  document.getElementById('game-container').style.display = 'flex';
+}
+
+function initLevel(index) {
+  currentIndex = index;
+  level = parseLevel(LEVELS[index]);
+  path = [];
+  coloredTotal = 0;
+  completed = false;
+  document.getElementById('win-overlay').classList.remove('visible');
+
+  for (let r = 0; r < level.rows; r++) {
+    for (let c = 0; c < level.cols; c++) {
+      const cell = level.grid[r][c];
+      if (cell.colored) coloredTotal++;
+      if (cell.start) path.push({ x: c, y: r });
+    }
+  }
+
+  document.getElementById('level-label').textContent = `Level ${index + 1}`;
+  document.getElementById('next-btn').style.display =
+    index + 1 < LEVELS.length ? 'block' : 'none';
+
+  showGame();
+  render();
+}
+
+// ─── Input ───────────────────────────────────────────────────────────────────
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('game-container').style.display === 'none') return;
+  switch (e.key) {
+    case 'ArrowUp':    case 'w': case 'W': e.preventDefault(); tryMove(0, -1);  break;
+    case 'ArrowDown':  case 's': case 'S': e.preventDefault(); tryMove(0,  1);  break;
+    case 'ArrowLeft':  case 'a': case 'A': e.preventDefault(); tryMove(-1, 0);  break;
+    case 'ArrowRight': case 'd': case 'D': e.preventDefault(); tryMove(1,  0);  break;
+    case 'z': case 'Z': case 'Backspace':                       doUndo();        break;
+    case 'r': case 'R':                                         doReset();       break;
+  }
+});
+
+window.addEventListener('resize', () => { if (level) render(); });
+
+// ─── UI wiring ───────────────────────────────────────────────────────────────
+
+document.getElementById('back-btn').addEventListener('click', () => {
+  showLevelSelect();
+  level = null;
+});
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  initLevel(currentIndex + 1);
+});
+
+document.getElementById('menu-btn').addEventListener('click', () => {
+  showLevelSelect();
+  level = null;
+});
+
+// Build level select buttons
+(function buildLevelSelect() {
+  const grid = document.getElementById('level-grid');
+  for (let i = 0; i < LEVELS.length; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'lvl-btn';
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => initLevel(i));
+    grid.appendChild(btn);
+  }
+})();
+
+showLevelSelect();
+</script>
+</body>
+</html>
