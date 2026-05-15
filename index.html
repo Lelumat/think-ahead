@@ -80,6 +80,18 @@ body {
 }
 #back-btn:hover { color: #fff; }
 #level-label { color: #888; font-size: 0.9rem; }
+#hud-actions { margin-left: auto; display: flex; gap: 8px; }
+.hud-btn {
+  background: #25253a;
+  color: #999;
+  border: 1px solid #333;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+.hud-btn:hover { color: #fff; }
 #canvas-wrapper {
   flex: 1;
   position: relative;
@@ -129,6 +141,10 @@ body {
   <div id="hud">
     <button id="back-btn">&#8592; Levels</button>
     <span id="level-label"></span>
+    <div id="hud-actions">
+      <button class="hud-btn" id="undo-btn" title="Undo (Z)">&#8617;</button>
+      <button class="hud-btn" id="reset-btn" title="Reset (R)">&#8635;</button>
+    </div>
   </div>
   <div id="canvas-wrapper">
     <canvas id="canvas"></canvas>
@@ -895,7 +911,39 @@ function initLevel(index) {
   render();
 }
 
-// ─── Input ───────────────────────────────────────────────────────────────────
+// ─── Touch / click input ─────────────────────────────────────────────────────
+
+function handleTap(clientX, clientY) {
+  if (!level || completed || path.length === 0) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+  const cs  = cellSize();
+  const mg  = margin(cs);
+  const hitR = Math.max(NODE_R + 10, cs * 0.38);
+  for (let r = 0; r < level.rows; r++) {
+    for (let c = 0; c < level.cols; c++) {
+      const px = mg.x + c * cs, py = mg.y + r * cs;
+      if ((x - px) ** 2 + (y - py) ** 2 <= hitR * hitR) {
+        const cur = path[path.length - 1];
+        const dx = c - cur.x, dy = r - cur.y;
+        if (Math.abs(dx) + Math.abs(dy) === 1) tryMove(dx, dy);
+        return;
+      }
+    }
+  }
+}
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  handleTap(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
+
+canvas.addEventListener('click', e => {
+  handleTap(e.clientX, e.clientY);
+});
+
+// ─── Keyboard input ──────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', e => {
   if (document.getElementById('game-container').style.display === 'none') return;
@@ -912,6 +960,9 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', () => { if (level) render(); });
 
 // ─── UI wiring ───────────────────────────────────────────────────────────────
+
+document.getElementById('undo-btn').addEventListener('click', doUndo);
+document.getElementById('reset-btn').addEventListener('click', doReset);
 
 document.getElementById('back-btn').addEventListener('click', () => {
   showLevelSelect();
