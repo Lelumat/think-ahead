@@ -872,7 +872,8 @@ function render() {
   // Controls hint
   ctx.fillStyle = '#737373';
   ctx.font = '13px system-ui, sans-serif';
-  ctx.fillText('WASD / Arrows: move     Z / Backspace: undo     R: restart', 20, canvas.height - 10);
+  ctx.fillText('WASD / Arrows: move     Z / Backspace: undo     R: restart', 20, canvas.height - 22);
+  ctx.fillText('Touch: drag from current node to move', 20, canvas.height - 6);
 }
 
 // ─── Screen management ───────────────────────────────────────────────────────
@@ -911,15 +912,36 @@ function initLevel(index) {
   render();
 }
 
-// ─── Touch / click input ─────────────────────────────────────────────────────
+// ─── Touch / drag / click input ──────────────────────────────────────────────
+
+let dragging = false;
+let dragLastNode = null;
+
+function clientToCanvas(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+function posToNearestNode(cx, cy) {
+  if (!level) return null;
+  const cs = cellSize();
+  const mg = margin(cs);
+  const threshold = cs * 0.5;
+  let best = null, bestDist = threshold;
+  for (let r = 0; r < level.rows; r++) {
+    for (let c = 0; c < level.cols; c++) {
+      const d = Math.hypot(cx - (mg.x + c * cs), cy - (mg.y + r * cs));
+      if (d < bestDist) { bestDist = d; best = { x: c, y: r }; }
+    }
+  }
+  return best;
+}
 
 function handleTap(clientX, clientY) {
   if (!level || completed || path.length === 0) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = clientX - rect.left;
-  const y = clientY - rect.top;
-  const cs  = cellSize();
-  const mg  = margin(cs);
+  const { x, y } = clientToCanvas(clientX, clientY);
+  const cs   = cellSize();
+  const mg   = margin(cs);
   const hitR = Math.max(NODE_R + 10, cs * 0.38);
   for (let r = 0; r < level.rows; r++) {
     for (let c = 0; c < level.cols; c++) {
@@ -934,14 +956,50 @@ function handleTap(clientX, clientY) {
   }
 }
 
+function startDrag(clientX, clientY) {
+  if (!level || completed || path.length === 0) return false;
+  const { x, y } = clientToCanvas(clientX, clientY);
+  const node = posToNearestNode(x, y);
+  const cur  = path[path.length - 1];
+  if (node && node.x === cur.x && node.y === cur.y) {
+    dragging = true;
+    dragLastNode = node;
+    return true;
+  }
+  return false;
+}
+
+function continueDrag(clientX, clientY) {
+  if (!dragging || !level || completed) return;
+  const { x, y } = clientToCanvas(clientX, clientY);
+  const node = posToNearestNode(x, y);
+  if (!node) return;
+  if (dragLastNode && node.x === dragLastNode.x && node.y === dragLastNode.y) return;
+  const cur = path[path.length - 1];
+  const dx = node.x - cur.x, dy = node.y - cur.y;
+  if (Math.abs(dx) + Math.abs(dy) === 1) tryMove(dx, dy);
+  dragLastNode = node;
+}
+
+function endDrag() { dragging = false; dragLastNode = null; }
+
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  handleTap(e.touches[0].clientX, e.touches[0].clientY);
+  const t = e.touches[0];
+  if (!startDrag(t.clientX, t.clientY)) handleTap(t.clientX, t.clientY);
 }, { passive: false });
 
-canvas.addEventListener('click', e => {
-  handleTap(e.clientX, e.clientY);
-});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  continueDrag(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => { e.preventDefault(); endDrag(); }, { passive: false });
+
+canvas.addEventListener('mousedown', e => { if (e.button === 0) startDrag(e.clientX, e.clientY); });
+canvas.addEventListener('mousemove', e => { if (e.buttons & 1) continueDrag(e.clientX, e.clientY); });
+canvas.addEventListener('mouseup',   () => endDrag());
+canvas.addEventListener('click',     e => handleTap(e.clientX, e.clientY));
 
 // ─── Keyboard input ──────────────────────────────────────────────────────────
 
