@@ -120,26 +120,29 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 28px;
+  gap: clamp(12px, 3vw, 28px);
+  padding: 10px;
+  overflow-y: auto;
 }
 #level-select-content h1 {
-  font-size: 2rem;
+  font-size: clamp(1.3rem, 5vw, 2rem);
   color: #eeeeee;
   letter-spacing: 0.04em;
 }
 #level-grid {
   display: grid;
-  grid-template-columns: repeat(6, 70px);
-  gap: 10px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(4px, 1.5vw, 10px);
+  width: min(420px, 90vw);
 }
 .lvl-btn {
-  width: 70px;
-  height: 70px;
+  width: 100%;
+  aspect-ratio: 1;
   background: #1e1e2e;
   color: #aaaaaa;
   border: 1px solid #333344;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: clamp(0.65rem, 2.8vw, 1rem);
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
   display: flex;
@@ -153,8 +156,8 @@ body {
   color: #ffffff;
   border-color: #555566;
 }
-.lvl-btn.solved { border-color: #2a5a2a; color: #77cc77; }
-.lvl-btn.solved .lvl-check { font-size: 0.65rem; color: #55aa55; line-height: 1; }
+.lvl-btn.solved { border-color: #7a5c00; color: #FFD700; }
+.lvl-btn.solved .lvl-check { font-size: 0.65em; color: #B8860B; line-height: 1; }
 
 /* ── Game ── */
 #game-container {
@@ -277,7 +280,7 @@ body {
 .lb-rank { width: 28px; color: #555; font-size: 0.8rem; }
 .lb-name { flex: 1; }
 .lb-name.me { color: #aaddff; font-weight: bold; }
-.lb-score { color: #77cc77; font-size: 0.9rem; }
+.lb-score { color: #FFD700; font-size: 0.9rem; }
 #close-leaderboard {
   display: block;
   margin: 0 auto;
@@ -1118,7 +1121,33 @@ function parseLevel(text) {
     }
   }
 
-  return { cols, rows, grid, hConn, vConn };
+  return rotate90CW({ cols, rows, grid, hConn, vConn });
+}
+
+function rotate90CW(lv) {
+  const R = lv.rows, C = lv.cols;
+  // new grid[i][j] = old grid[R-1-j][i]
+  const newGrid = [];
+  for (let i = 0; i < C; i++) {
+    const row = [];
+    for (let j = 0; j < R; j++) row.push(lv.grid[R-1-j][i]);
+    newGrid.push(row);
+  }
+  // new hConn[i][j] = old vConn[R-2-j][i]  (horizontal ↔ vertical after rotation)
+  const newHConn = [];
+  for (let i = 0; i < C; i++) {
+    const row = [];
+    for (let j = 0; j < R-1; j++) row.push(lv.vConn[R-2-j][i]);
+    newHConn.push(row);
+  }
+  // new vConn[i][j] = old hConn[R-1-j][i]
+  const newVConn = [];
+  for (let i = 0; i < C-1; i++) {
+    const row = [];
+    for (let j = 0; j < R; j++) row.push(lv.hConn[R-1-j][i]);
+    newVConn.push(row);
+  }
+  return { cols: R, rows: C, grid: newGrid, hConn: newHConn, vConn: newVConn };
 }
 
 // ─── Player management ───────────────────────────────────────────────────────
