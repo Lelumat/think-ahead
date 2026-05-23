@@ -17,8 +17,104 @@ body {
   flex-direction: column;
 }
 
+/* ── Login screen ── */
+#login-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+}
+#login-screen h1 {
+  font-size: 2rem;
+  color: #eeeeee;
+  letter-spacing: 0.04em;
+}
+#login-screen h2 {
+  font-size: 1rem;
+  color: #888;
+  font-weight: normal;
+}
+#player-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 440px;
+}
+.player-btn {
+  background: #1e1e2e;
+  color: #aaaaaa;
+  border: 1px solid #333344;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.player-btn:hover {
+  background: #2a2a40;
+  color: #ffffff;
+  border-color: #555566;
+}
+#login-divider { color: #444; font-size: 0.8rem; }
+#new-player-form { display: flex; gap: 8px; }
+#player-name-input {
+  background: #1e1e2e;
+  color: #eeeeee;
+  border: 1px solid #444455;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  outline: none;
+  width: 180px;
+}
+#player-name-input:focus { border-color: #6688cc; }
+#new-player-btn {
+  background: #2a3a5a;
+  color: #aaddff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+#new-player-btn:hover { background: #3a4a6a; }
+
 /* ── Level select ── */
 #level-select {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+}
+#player-bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: #1a1a24;
+  border-bottom: 1px solid #2a2a3a;
+  flex-shrink: 0;
+}
+#player-name-display { color: #888; font-size: 0.85rem; }
+#player-name-display strong { color: #ccddff; }
+#player-bar-actions { display: flex; gap: 8px; }
+.bar-btn {
+  background: #25253a;
+  color: #999;
+  border: 1px solid #333;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: color 0.12s;
+}
+.bar-btn:hover { color: #fff; }
+#level-select-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -26,7 +122,7 @@ body {
   justify-content: center;
   gap: 28px;
 }
-#level-select h1 {
+#level-select-content h1 {
   font-size: 2rem;
   color: #eeeeee;
   letter-spacing: 0.04em;
@@ -46,12 +142,19 @@ body {
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 .lvl-btn:hover {
   background: #2a2a40;
   color: #ffffff;
   border-color: #555566;
 }
+.lvl-btn.solved { border-color: #2a5a2a; color: #77cc77; }
+.lvl-btn.solved .lvl-check { font-size: 0.65rem; color: #55aa55; line-height: 1; }
 
 /* ── Game ── */
 #game-container {
@@ -128,15 +231,98 @@ body {
   transition: background 0.12s;
 }
 .win-btn:hover { background: #3a4a6a; }
+
+/* ── Leaderboard overlay ── */
+#leaderboard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+#leaderboard-overlay.visible { display: flex; }
+#leaderboard-panel {
+  background: #1e1e2e;
+  border: 1px solid #44445a;
+  border-radius: 12px;
+  padding: 28px 36px;
+  min-width: 300px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+#leaderboard-panel h2 {
+  color: #eee;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+#leaderboard-list {
+  list-style: none;
+  margin-bottom: 20px;
+}
+#leaderboard-list li {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a2a3a;
+  font-size: 0.95rem;
+  color: #ccc;
+  gap: 8px;
+}
+#leaderboard-list li:last-child { border-bottom: none; }
+.lb-rank { width: 28px; color: #555; font-size: 0.8rem; }
+.lb-name { flex: 1; }
+.lb-name.me { color: #aaddff; font-weight: bold; }
+.lb-score { color: #77cc77; font-size: 0.9rem; }
+#close-leaderboard {
+  display: block;
+  margin: 0 auto;
+  background: #25253a;
+  color: #999;
+  border: 1px solid #333;
+  padding: 8px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.12s;
+}
+#close-leaderboard:hover { color: #fff; }
 </style>
 </head>
 <body>
 
-<div id="level-select">
+<!-- ── Login screen ── -->
+<div id="login-screen">
   <h1>Think Ahead</h1>
-  <div id="level-grid"></div>
+  <h2>Who's playing?</h2>
+  <div id="player-list"></div>
+  <div id="login-divider" style="display:none">— or enter a new name —</div>
+  <div id="new-player-form">
+    <input type="text" id="player-name-input" placeholder="Your name..." maxlength="20" autocomplete="off" spellcheck="false">
+    <button id="new-player-btn">Play</button>
+  </div>
 </div>
 
+<!-- ── Level select ── -->
+<div id="level-select">
+  <div id="player-bar">
+    <span id="player-name-display">Playing as <strong id="current-player-label"></strong></span>
+    <div id="player-bar-actions">
+      <button class="bar-btn" id="leaderboard-btn">Leaderboard</button>
+      <button class="bar-btn" id="change-player-btn">Change</button>
+    </div>
+  </div>
+  <div id="level-select-content">
+    <h1>Think Ahead</h1>
+    <div id="level-grid"></div>
+  </div>
+</div>
+
+<!-- ── Game ── -->
 <div id="game-container">
   <div id="hud">
     <button id="back-btn">&#8592; Levels</button>
@@ -153,6 +339,15 @@ body {
       <button class="win-btn" id="next-btn">Next Level &#8594;</button>
       <button class="win-btn" id="menu-btn">Level Select</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Leaderboard overlay ── -->
+<div id="leaderboard-overlay">
+  <div id="leaderboard-panel">
+    <h2>Leaderboard</h2>
+    <ul id="leaderboard-list"></ul>
+    <button id="close-leaderboard">Close</button>
   </div>
 </div>
 
@@ -686,11 +881,56 @@ function parseLevel(text) {
   return { cols, rows, grid, hConn, vConn };
 }
 
+// ─── Player management ───────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'thinkAheadData';
+const COOKIE_NAME = 'thinkAheadPlayer';
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveData(d) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+}
+
+function getPlayerSolved(name) {
+  return loadData()[name] || [];
+}
+
+function markLevelSolved(name, idx) {
+  const d = loadData();
+  if (!d[name]) d[name] = [];
+  if (!d[name].includes(idx)) { d[name].push(idx); saveData(d); }
+}
+
+function getAllPlayers() {
+  return Object.entries(loadData())
+    .map(([name, solved]) => ({ name, count: solved.length }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+function setCookie(k, v, days) {
+  const exp = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${k}=${encodeURIComponent(v)};expires=${exp};path=/;SameSite=Lax`;
+}
+
+function getCookie(k) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // ─── State ───────────────────────────────────────────────────────────────────
 
+let currentPlayer = '';
 let currentIndex = 0;
 let level = null;
-let path = [];       // [{x, y}]
+let path = [];
 let coloredTotal = 0;
 let completed = false;
 
@@ -749,6 +989,7 @@ function checkWin() {
   if (coloredTotal === 0 || completed) return;
   if (collectedCount() === coloredTotal) {
     completed = true;
+    if (currentPlayer) markLevelSolved(currentPlayer, currentIndex);
     document.getElementById('win-overlay').classList.add('visible');
   }
 }
@@ -758,7 +999,6 @@ function checkWin() {
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const NODE_R = 18;
-// Colored node: Color(0.95, 0.15, 0.15), lightened 0.25 for visited
 const GEM_FILL    = 'rgb(242,38,38)';
 const GEM_VISITED = 'rgb(245,92,92)';
 
@@ -787,11 +1027,9 @@ function render() {
   const edgeW  = Math.max(6, cs * 0.09);
   const trailW = Math.min(18, cs * 0.18);
 
-  // Background
   ctx.fillStyle = '#12121a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Edges
   ctx.strokeStyle = '#8c8ca6';
   ctx.lineWidth = edgeW;
   ctx.lineCap = 'round';
@@ -799,21 +1037,14 @@ function render() {
     for (let c = 0; c < level.cols; c++) {
       const px = mg.x + c * cs, py = mg.y + r * cs;
       if (c + 1 < level.cols && level.hConn[r][c]) {
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(mg.x + (c + 1) * cs, py);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(mg.x + (c + 1) * cs, py); ctx.stroke();
       }
       if (r + 1 < level.rows && level.vConn[r][c]) {
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px, mg.y + (r + 1) * cs);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, mg.y + (r + 1) * cs); ctx.stroke();
       }
     }
   }
 
-  // Trail
   if (path.length > 1) {
     ctx.strokeStyle = 'rgba(89,166,255,0.85)';
     ctx.lineWidth = trailW;
@@ -827,7 +1058,6 @@ function render() {
     ctx.stroke();
   }
 
-  // Nodes
   const cur = path.length > 0 ? path[path.length - 1] : null;
   for (let r = 0; r < level.rows; r++) {
     for (let c = 0; c < level.cols; c++) {
@@ -837,39 +1067,29 @@ function render() {
       const isCurrent = cur && cur.x === c && cur.y === r;
 
       let fill;
-      if      (cell.start)             fill = visited ? '#40bf40' : '#268c26';
+      if      (cell.start)              fill = visited ? '#40bf40' : '#268c26';
       else if (cell.colored && visited) fill = GEM_VISITED;
       else if (cell.colored)            fill = GEM_FILL;
       else if (visited)                 fill = '#4073b3';
       else                              fill = '#333340';
 
-      ctx.beginPath();
-      ctx.arc(px, py, NODE_R, 0, Math.PI * 2);
-      ctx.fillStyle = fill;
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, NODE_R, 0, Math.PI * 2);
+      ctx.fillStyle = fill; ctx.fill();
 
-      ctx.beginPath();
-      ctx.arc(px, py, NODE_R, 0, Math.PI * 2);
-      ctx.strokeStyle = '#a6a6a6';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, NODE_R, 0, Math.PI * 2);
+      ctx.strokeStyle = '#a6a6a6'; ctx.lineWidth = 1.5; ctx.stroke();
 
       if (isCurrent) {
-        ctx.beginPath();
-        ctx.arc(px, py, NODE_R + 5, 0, Math.PI * 2);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, py, NODE_R + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
       }
     }
   }
 
-  // Progress counter
   ctx.fillStyle = '#cccccc';
   ctx.font = '16px system-ui, sans-serif';
   ctx.fillText(`${collectedCount()} / ${coloredTotal} collected`, 20, 50);
 
-  // Controls hint
   ctx.fillStyle = '#737373';
   ctx.font = '13px system-ui, sans-serif';
   ctx.fillText('WASD / Arrows: move     Z / Backspace: undo     R: restart', 20, canvas.height - 22);
@@ -878,14 +1098,90 @@ function render() {
 
 // ─── Screen management ───────────────────────────────────────────────────────
 
+function showLoginScreen() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('level-select').style.display = 'none';
+  document.getElementById('game-container').style.display = 'none';
+  buildPlayerList();
+  document.getElementById('player-name-input').value = '';
+}
+
 function showLevelSelect() {
+  document.getElementById('login-screen').style.display = 'none';
   document.getElementById('level-select').style.display = 'flex';
   document.getElementById('game-container').style.display = 'none';
+  buildLevelGrid();
 }
 
 function showGame() {
+  document.getElementById('login-screen').style.display = 'none';
   document.getElementById('level-select').style.display = 'none';
   document.getElementById('game-container').style.display = 'flex';
+}
+
+function buildPlayerList() {
+  const d = loadData();
+  const names = Object.keys(d).sort();
+  const list = document.getElementById('player-list');
+  const divider = document.getElementById('login-divider');
+  list.innerHTML = '';
+  if (names.length > 0) {
+    divider.style.display = '';
+    for (const name of names) {
+      const btn = document.createElement('button');
+      btn.className = 'player-btn';
+      const count = (d[name] || []).length;
+      btn.textContent = `${name}  (${count} / ${LEVELS.length})`;
+      btn.addEventListener('click', () => setPlayer(name));
+      list.appendChild(btn);
+    }
+  } else {
+    divider.style.display = 'none';
+  }
+}
+
+function setPlayer(name) {
+  name = name.trim();
+  if (!name) return;
+  currentPlayer = name;
+  setCookie(COOKIE_NAME, name, 30);
+  const d = loadData();
+  if (!d[name]) { d[name] = []; saveData(d); }
+  document.getElementById('current-player-label').textContent = name;
+  showLevelSelect();
+}
+
+function buildLevelGrid() {
+  const grid = document.getElementById('level-grid');
+  grid.innerHTML = '';
+  const solved = getPlayerSolved(currentPlayer);
+  for (let i = 0; i < LEVELS.length; i++) {
+    const btn = document.createElement('button');
+    const isSolved = solved.includes(i);
+    btn.className = 'lvl-btn' + (isSolved ? ' solved' : '');
+    btn.innerHTML = `<span>${i + 1}</span>${isSolved ? '<span class="lvl-check">✓</span>' : ''}`;
+    btn.addEventListener('click', () => initLevel(i));
+    grid.appendChild(btn);
+  }
+}
+
+function showLeaderboard() {
+  const players = getAllPlayers();
+  const list = document.getElementById('leaderboard-list');
+  list.innerHTML = '';
+  if (players.length === 0) {
+    const li = document.createElement('li');
+    li.innerHTML = '<span style="color:#555;font-size:0.9rem">No players yet</span>';
+    list.appendChild(li);
+  } else {
+    players.forEach(({ name, count }, i) => {
+      const li = document.createElement('li');
+      const isMe = name === currentPlayer;
+      li.innerHTML = `<span class="lb-rank">${i + 1}.</span><span class="lb-name${isMe ? ' me' : ''}">${escHtml(name)}</span><span class="lb-score">${count} / ${LEVELS.length}</span>`;
+      list.appendChild(li);
+    });
+  }
+  document.getElementById('leaderboard-overlay').classList.add('visible');
 }
 
 function initLevel(index) {
@@ -1036,19 +1332,43 @@ document.getElementById('menu-btn').addEventListener('click', () => {
   level = null;
 });
 
-// Build level select buttons
-(function buildLevelSelect() {
-  const grid = document.getElementById('level-grid');
-  for (let i = 0; i < LEVELS.length; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'lvl-btn';
-    btn.textContent = i + 1;
-    btn.addEventListener('click', () => initLevel(i));
-    grid.appendChild(btn);
-  }
-})();
+document.getElementById('leaderboard-btn').addEventListener('click', showLeaderboard);
+document.getElementById('change-player-btn').addEventListener('click', showLoginScreen);
+document.getElementById('close-leaderboard').addEventListener('click', () => {
+  document.getElementById('leaderboard-overlay').classList.remove('visible');
+});
+document.getElementById('leaderboard-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('leaderboard-overlay'))
+    document.getElementById('leaderboard-overlay').classList.remove('visible');
+});
 
-showLevelSelect();
+document.getElementById('new-player-btn').addEventListener('click', () => {
+  const name = document.getElementById('player-name-input').value.trim();
+  if (name) setPlayer(name);
+});
+
+document.getElementById('player-name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const name = document.getElementById('player-name-input').value.trim();
+    if (name) setPlayer(name);
+  }
+});
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+
+(function init() {
+  const saved = getCookie(COOKIE_NAME);
+  if (saved) {
+    const d = loadData();
+    if (d[saved] !== undefined) {
+      currentPlayer = saved;
+      document.getElementById('current-player-label').textContent = saved;
+      showLevelSelect();
+      return;
+    }
+  }
+  showLoginScreen();
+})();
 </script>
 </body>
 </html>
